@@ -88,12 +88,17 @@
 	<div id="ticket" class="ticket" style="display:none;"></div>
 	<div class="no-print" style="text-align:center;margin-top:20px;">
 		<button onclick="window.print()">Imprimir Ticket</button>
+		<!-- Botón para reiniciar el conteo de tickets (requiere contraseña) -->
+		<button onclick="requestReset()" style="margin-left:8px;">Reiniciar Conteo</button>
 	</div>
 	<script>
 		// Inicializar número de ticket si no existe
 		if (!localStorage.getItem('ticketNumber')) {
 			localStorage.setItem('ticketNumber', '1');
 		}
+
+		// Contraseña para permitir reiniciar el contador (cambiar aquí si se desea)
+		const RESET_PASSWORD = '45985365';
 
 		function getNextTicketNumber() {
 			let num = parseInt(localStorage.getItem('ticketNumber') || '1', 10);
@@ -187,6 +192,23 @@
 				<div class='ticket-footer'>¡Gracias por preferirnos!<br>Vuelva pronto.</div>
 			`;
 		};
+
+		// Solicita contraseña y reinicia el contador si es correcta
+		function requestReset() {
+			const pwd = prompt('Ingrese la contraseña para reiniciar el conteo de tickets:');
+			if (pwd === null) return; // usuario canceló
+			if (pwd === RESET_PASSWORD) {
+				if (confirm('¿Confirmar reinicio del contador de tickets a 1?')) {
+					localStorage.setItem('ticketNumber', '1');
+					alert('Contador reiniciado a 1');
+					// Opcional: ocultar ticket actual y limpiar lastTicket
+					localStorage.removeItem('lastTicket');
+					document.getElementById('ticket').style.display = 'none';
+				}
+			} else {
+				alert('Contraseña incorrecta');
+			}
+		}
 	</script>
 </body>
 </html>
