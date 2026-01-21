@@ -1,214 +1,85 @@
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-	<title>Sistema de Tickets</title>
+	<meta charset="UTF-8">
+	<title>Error 103792</title>
 	<style>
 		body {
 			font-family: monospace;
-			background: #f5f5f5;
-			padding: 20px;
+			background: #0f0f0f;
+			color: #ff4c4c;
 			display: flex;
-			flex-direction: column;
-			align-items: center;
 			justify-content: center;
-		}
-		.ticket {
-			width: 80mm;
-			background: #fff;
-			padding: 10px;
-			margin: 0 auto;
-			border: 1px solid #ccc;
-			box-shadow: 0 2px 8px #ccc;
-			display: flex;
-			flex-direction: column;
 			align-items: center;
+			height: 100vh;
+			margin: 0;
 		}
-		.ticket-header {
+		.box {
+			border: 2px solid #ff4c4c;
+			padding: 30px;
 			text-align: center;
-			font-weight: bold;
-			margin-bottom: 10px;
+			width: 320px;
+			background: #000;
 		}
-		.ticket-footer {
-			text-align: center;
+		h1 {
+			margin: 0 0 10px 0;
+			font-size: 22px;
+		}
+		p {
+			font-size: 14px;
+			color: #ffb3b3;
+		}
+		input {
+			width: 100%;
+			padding: 8px;
+			margin-top: 15px;
+			font-family: monospace;
+			font-size: 14px;
+		}
+		button {
 			margin-top: 10px;
-			font-size: 12px;
+			width: 100%;
+			padding: 8px;
+			font-family: monospace;
+			cursor: pointer;
 		}
-		@media print {
-			body {
-				background: none;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-			}
-			.ticket {
-				box-shadow: none;
-				border: none;
-				margin: 0 auto;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-			}
-			.no-print { display: none; }
-			.ticket, .ticket * {
-				text-align: center !important;
-			}
-			table, th, td {
-				margin-left: auto;
-				margin-right: auto;
-			}
+		.ok {
+			color: #4cff4c;
+			margin-top: 10px;
 		}
-		label { display: block; margin-top: 10px; }
-		input, textarea { width: 100%; }
+		.bad {
+			color: #ff4c4c;
+			margin-top: 10px;
+		}
 	</style>
 </head>
 <body>
-	<div class="no-print">
-		<h2>Generar Ticket</h2>
-		<form id="ticketForm">
-			<table id="itemsTable" style="width:100%;margin-bottom:10px;">
-				<thead>
-					<tr>
-						<th>Descripción</th>
-						<th>Cantidad</th>
-						<th>Precio (Q)</th>
-						<th>Subtotal (Q)</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody id="itemsBody">
-				</tbody>
-			</table>
-			<button type="button" onclick="addItem()">Agregar Ítem</button>
-			<div style="margin-top:10px;text-align:right;">
-				<b>Total: Q <span id="total">0.00</span></b>
-			</div>
-			<button type="submit" style="margin-top:10px;">Generar Ticket</button>
-		</form>
-	</div>
-	<div id="ticket" class="ticket" style="display:none;"></div>
-	<div class="no-print" style="text-align:center;margin-top:20px;">
-		<button onclick="window.print()">Imprimir Ticket</button>
-		<!-- Botón para reiniciar el conteo de tickets (requiere contraseña) -->
-		<button onclick="requestReset()" style="margin-left:8px;">Reiniciar Conteo</button>
-	</div>
-	<script>
-		// Inicializar número de ticket si no existe
-		if (!localStorage.getItem('ticketNumber')) {
-			localStorage.setItem('ticketNumber', '1');
+
+<div class="box">
+	<h1>ERROR 103792</h1>
+	<p>Sistema bloqueado.<br>
+	Contacte al administrador para arreglar.</p>
+
+	<input type="password" id="pwd" placeholder="Contraseña de administrador">
+	<button onclick="check()">Verificar</button>
+
+	<div id="msg"></div>
+</div>
+
+<script>
+	const PASSWORD = "45985365"; // cambia la contraseña aquí
+
+	function check() {
+		const val = document.getElementById("pwd").value;
+		const msg = document.getElementById("msg");
+
+		if (val === PASSWORD) {
+			msg.innerHTML = "<div class='ok'>✔ Acceso concedido</div>";
+		} else {
+			msg.innerHTML = "<div class='bad'>✖ Acceso denegado</div>";
 		}
+	}
+</script>
 
-		// Contraseña para permitir reiniciar el contador (cambiar aquí si se desea)
-		const RESET_PASSWORD = '45985365';
-
-		function getNextTicketNumber() {
-			let num = parseInt(localStorage.getItem('ticketNumber') || '1', 10);
-			localStorage.setItem('ticketNumber', (num + 1).toString());
-			return num;
-		}
-
-		function addItem(desc = '', cant = 1, precio = 0) {
-			const tbody = document.getElementById('itemsBody');
-			const row = document.createElement('tr');
-			row.innerHTML = `
-				<td><input type="text" class="desc" value="${desc}" required></td>
-				<td><input type="number" class="cant" value="${cant}" min="1" style="width:60px;" required></td>
-				<td><input type="number" class="precio" value="${precio}" min="0" step="0.01" style="width:80px;" required></td>
-				<td class="subtotal">0.00</td>
-				<td><button type="button" onclick="this.parentNode.parentNode.remove();calcTotal();">Quitar</button></td>
-			`;
-			tbody.appendChild(row);
-			row.querySelectorAll('input').forEach(input => {
-				input.addEventListener('input', calcTotal);
-			});
-			calcTotal();
-		}
-
-		function calcTotal() {
-			let total = 0;
-			document.querySelectorAll('#itemsBody tr').forEach(row => {
-				const cant = parseFloat(row.querySelector('.cant').value) || 0;
-				const precio = parseFloat(row.querySelector('.precio').value) || 0;
-				const subtotal = cant * precio;
-				row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
-				total += subtotal;
-			});
-			document.getElementById('total').textContent = total.toFixed(2);
-			return total;
-		}
-
-		// Agregar un ítem por defecto al cargar
-		window.onload = function() {
-			if(document.getElementById('itemsBody').children.length === 0) addItem();
-		};
-
-		document.getElementById('ticketForm').onsubmit = function(e) {
-			e.preventDefault();
-			const items = [];
-			document.querySelectorAll('#itemsBody tr').forEach(row => {
-				const desc = row.querySelector('.desc').value;
-				const cant = parseFloat(row.querySelector('.cant').value) || 0;
-				const precio = parseFloat(row.querySelector('.precio').value) || 0;
-				if(desc && cant > 0 && precio >= 0) {
-					items.push({desc, cant, precio, subtotal: cant*precio});
-				}
-			});
-			if(items.length === 0) {
-				alert('Agrega al menos un ítem.');
-				return;
-			}
-			const total = calcTotal().toFixed(2);
-			const ticketNumber = getNextTicketNumber();
-			const now = new Date();
-			const fecha = now.toLocaleDateString();
-			const hora = now.toLocaleTimeString();
-
-			// Guardar último ticket en localStorage (opcional)
-			localStorage.setItem('lastTicket', JSON.stringify({ticketNumber, fecha, hora, items, total}));
-
-			// Mostrar ticket
-			let itemsHtml = '';
-			items.forEach(it => {
-				itemsHtml += `<tr><td>${it.desc}</td><td style='text-align:right;'>${it.cant}</td><td style='text-align:right;'>Q${it.precio.toFixed(2)}</td><td style='text-align:right;'>Q${it.subtotal.toFixed(2)}</td></tr>`;
-			});
-			document.getElementById('ticket').style.display = 'block';
-			document.getElementById('ticket').innerHTML = `
-				<div class='ticket-header'>
-				</div>
-				<div style='text-align:center;font-size:13px;'>
-					¡Bienvenido!<br>
-					Esperamos que disfrute su estancia y nuestros servicios.<br>
-				</div>
-				<div style='text-align:center;margin:8px 0;'>TICKET #${ticketNumber}</div>
-				<div>Fecha: ${fecha}</div>
-				<div>Hora: ${hora}</div>
-				<hr>
-				<table style='width:100%;font-size:13px;'>
-					<thead><tr><th>Descripción</th><th style='text-align:right;'>Cant</th><th style='text-align:right;'>P.Unit</th><th style='text-align:right;'>Subt</th></tr></thead>
-					<tbody>${itemsHtml}</tbody>
-				</table>
-				<hr>
-				<div style='text-align:right;font-size:16px;'><b>Total: Q${total}</b></div>
-				<hr>
-				<div class='ticket-footer'>¡Gracias por preferirnos!<br>Vuelva pronto.</div>
-			`;
-		};
-
-		// Solicita contraseña y reinicia el contador si es correcta
-		function requestReset() {
-			const pwd = prompt('Ingrese la contraseña para reiniciar el conteo de tickets:');
-			if (pwd === null) return; // usuario canceló
-			if (pwd === RESET_PASSWORD) {
-				if (confirm('¿Confirmar reinicio del contador de tickets a 1?')) {
-					localStorage.setItem('ticketNumber', '1');
-					alert('Contador reiniciado a 1');
-					// Opcional: ocultar ticket actual y limpiar lastTicket
-					localStorage.removeItem('lastTicket');
-					document.getElementById('ticket').style.display = 'none';
-				}
-			} else {
-				alert('Contraseña incorrecta');
-			}
-		}
-	</script>
 </body>
 </html>
