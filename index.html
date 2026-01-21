@@ -5,7 +5,6 @@
 <title>Sistema de Tickets</title>
 
 <style>
-	/* ====== CONFIGURACIÓN GENERAL ====== */
 	body{
 		font-family: monospace;
 		background:#f5f5f5;
@@ -40,7 +39,7 @@
 		padding:2px 0;
 	}
 
-	/* ====== ALINEACIÓN TIPO POS ====== */
+	/* Alineación tipo POS */
 	th:nth-child(1), td:nth-child(1){ text-align:left; }
 	th:nth-child(2), td:nth-child(2),
 	th:nth-child(3), td:nth-child(3),
@@ -50,7 +49,7 @@
 
 	.no-print{ margin-bottom:20px; }
 
-	/* ====== IMPRESIÓN 80MM SIN CORTES ====== */
+	/* IMPRESIÓN 80MM SIN CORTES */
 	@page{
 		size:80mm auto;
 		margin:0;
@@ -111,10 +110,13 @@
 
 <div class="no-print" style="text-align:center;margin-top:10px;">
 	<button onclick="window.print()">Imprimir</button>
+	<button onclick="resetTickets()" style="margin-left:8px;">
+		Restablecer conteo
+	</button>
 </div>
 
 <script>
-	/* ====== CONTADOR DE TICKETS ====== */
+	/* CONTADOR DE TICKETS */
 	if(!localStorage.getItem('ticketNumber')){
 		localStorage.setItem('ticketNumber','1');
 	}
@@ -125,7 +127,7 @@
 		return n;
 	}
 
-	/* ====== ÍTEMS ====== */
+	/* ÍTEMS */
 	function addItem(){
 		const tr=document.createElement('tr');
 		tr.innerHTML=`
@@ -153,7 +155,7 @@
 		return total;
 	}
 
-	/* ====== GENERAR TICKET ====== */
+	/* GENERAR TICKET */
 	document.getElementById('ticketForm').onsubmit=e=>{
 		e.preventDefault();
 
@@ -221,6 +223,23 @@
 		document.getElementById('itemsBody').innerHTML='';
 		addItem();
 	};
+
+	/* RESTABLECER CONTEO */
+	function resetTickets(){
+		const pwd = prompt("Ingrese contraseña de administrador:");
+		if(pwd === null) return;
+
+		const PASSWORD = "45985365"; // cambia si deseas
+
+		if(pwd === PASSWORD){
+			if(confirm("¿Restablecer el conteo de tickets a 1?")){
+				localStorage.setItem("ticketNumber","1");
+				alert("Conteo restablecido correctamente");
+			}
+		}else{
+			alert("Contraseña incorrecta");
+		}
+	}
 
 	window.onload=addItem;
 </script>
