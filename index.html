@@ -1,82 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<title>Error 103792</title>
-	<style>
-		body {
-			font-family: monospace;
-			background: #0f0f0f;
-			color: #ff4c4c;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-			margin: 0;
-		}
-		.box {
-			border: 2px solid #ff4c4c;
-			padding: 30px;
-			text-align: center;
-			width: 320px;
-			background: #000;
-		}
-		h1 {
-			margin: 0 0 10px 0;
-			font-size: 22px;
-		}
-		p {
-			font-size: 14px;
-			color: #ffb3b3;
-		}
-		input {
-			width: 100%;
-			padding: 8px;
-			margin-top: 15px;
-			font-family: monospace;
-			font-size: 14px;
-		}
-		button {
-			margin-top: 10px;
-			width: 100%;
-			padding: 8px;
-			font-family: monospace;
-			cursor: pointer;
-		}
-		.ok {
-			color: #4cff4c;
-			margin-top: 10px;
-		}
-		.bad {
-			color: #ff4c4c;
-			margin-top: 10px;
-		}
-	</style>
+<meta charset="UTF-8">
+<title>System BIOS</title>
+<style>
+	body {
+		margin: 0;
+		background: #000;
+		color: #00ff66;
+		font-family: "Courier New", monospace;
+		font-size: 14px;
+		height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.screen {
+		width: 90%;
+		max-width: 800px;
+		border: 2px solid #00ff66;
+		padding: 20px;
+	}
+	.header {
+		text-align: center;
+		margin-bottom: 15px;
+	}
+	.line {
+		margin: 4px 0;
+	}
+	.error {
+		color: #ff4444;
+		font-weight: bold;
+		margin-top: 10px;
+	}
+	.input-box {
+		margin-top: 15px;
+	}
+	input {
+		background: #000;
+		border: 1px solid #00ff66;
+		color: #00ff66;
+		font-family: inherit;
+		padding: 6px;
+		width: 100%;
+	}
+	button {
+		margin-top: 10px;
+		background: #000;
+		border: 1px solid #00ff66;
+		color: #00ff66;
+		padding: 6px;
+		width: 100%;
+		cursor: pointer;
+	}
+	.success {
+		color: #00ff66;
+		font-weight: bold;
+	}
+	.denied {
+		color: #ff4444;
+		font-weight: bold;
+	}
+</style>
 </head>
 <body>
 
-<div class="box">
-	<h1>ERROR 103792</h1>
-	<p>Sistema bloqueado.<br>
-	Contacte al administrador para arreglar.</p>
+<div class="screen">
+	<div class="header">
+		<div>SYSTEM BIOS v4.92</div>
+		<div>Copyright (C) 1985-2026</div>
+	</div>
 
-	<input type="password" id="pwd" placeholder="Contraseña de administrador">
-	<button onclick="check()">Verificar</button>
+	<div class="line">Initializing Hardware.................... OK</div>
+	<div class="line">Checking Memory.......................... 16384 MB</div>
+	<div class="line">Detecting Storage........................ FAILED</div>
+	<div class="line">Loading System Kernel.................... ERROR</div>
+
+	<div class="error">
+		*** ERROR CODE: 103792 ***
+	</div>
+
+	<div class="line">
+		SYSTEM HALTED.<br>
+		ADMINISTRATOR ACCESS REQUIRED.<br>
+		CONTACT ADMINISTRATOR TO FIX SYSTEM.
+	</div>
+
+	<div class="input-box">
+		<div class="line">ENTER ADMIN PASSWORD:</div>
+		<input type="password" id="pwd" autofocus>
+		<button onclick="check()">UNLOCK SYSTEM</button>
+	</div>
 
 	<div id="msg"></div>
 </div>
 
 <script>
-	const PASSWORD = "45985365"; // cambia la contraseña aquí
+	const PASSWORD = "45985365"; // contraseña admin
 
 	function check() {
 		const val = document.getElementById("pwd").value;
 		const msg = document.getElementById("msg");
 
 		if (val === PASSWORD) {
-			msg.innerHTML = "<div class='ok'>✔ Acceso concedido</div>";
+			msg.innerHTML = "<div class='success'>ACCESS GRANTED<br>SYSTEM UNLOCKED</div>";
 		} else {
-			msg.innerHTML = "<div class='bad'>✖ Acceso denegado</div>";
+			msg.innerHTML = "<div class='denied'>ACCESS DENIED<br>INVALID PASSWORD</div>";
 		}
 	}
 </script>
