@@ -1,113 +1,214 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>System BIOS</title>
-<style>
-	body {
-		margin: 0;
-		background: #000;
-		color: #00ff66;
-		font-family: "Courier New", monospace;
-		font-size: 14px;
-		height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.screen {
-		width: 90%;
-		max-width: 800px;
-		border: 2px solid #00ff66;
-		padding: 20px;
-	}
-	.header {
-		text-align: center;
-		margin-bottom: 15px;
-	}
-	.line {
-		margin: 4px 0;
-	}
-	.error {
-		color: #ff4444;
-		font-weight: bold;
-		margin-top: 10px;
-	}
-	.input-box {
-		margin-top: 15px;
-	}
-	input {
-		background: #000;
-		border: 1px solid #00ff66;
-		color: #00ff66;
-		font-family: inherit;
-		padding: 6px;
-		width: 100%;
-	}
-	button {
-		margin-top: 10px;
-		background: #000;
-		border: 1px solid #00ff66;
-		color: #00ff66;
-		padding: 6px;
-		width: 100%;
-		cursor: pointer;
-	}
-	.success {
-		color: #00ff66;
-		font-weight: bold;
-	}
-	.denied {
-		color: #ff4444;
-		font-weight: bold;
-	}
-</style>
+	<meta charset="UTF-8">
+	<title>Sistema de Tickets</title>
+	<style>
+		body {
+			font-family: monospace;
+			background: #f5f5f5;
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+		}
+		.ticket {
+			width: 80mm;
+			background: #fff;
+			padding: 10px;
+			margin: 0 auto;
+			border: 1px solid #ccc;
+			box-shadow: 0 2px 8px #ccc;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+		.ticket-header {
+			text-align: center;
+			font-weight: bold;
+			margin-bottom: 10px;
+		}
+		.ticket-footer {
+			text-align: center;
+			margin-top: 10px;
+			font-size: 12px;
+		}
+		@media print {
+			body {
+				background: none;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+			}
+			.ticket {
+				box-shadow: none;
+				border: none;
+				margin: 0 auto;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+			.no-print { display: none; }
+			.ticket, .ticket * {
+				text-align: center !important;
+			}
+			table, th, td {
+				margin-left: auto;
+				margin-right: auto;
+			}
+		}
+		label { display: block; margin-top: 10px; }
+		input { width: 100%; }
+	</style>
 </head>
+
 <body>
 
-<div class="screen">
-	<div class="header">
-		<div>SYSTEM BIOS v4.92</div>
-		<div>Copyright (C) 1985-2026</div>
-	</div>
+<div class="no-print">
+	<h2>Generar Ticket</h2>
+	<form id="ticketForm">
+		<table style="width:100%;margin-bottom:10px;">
+			<thead>
+				<tr>
+					<th>Descripción</th>
+					<th>Cant</th>
+					<th>Precio Q</th>
+					<th>Subtotal</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="itemsBody"></tbody>
+		</table>
 
-	<div class="line">Initializing Hardware.................... OK</div>
-	<div class="line">Checking Memory.......................... 16384 MB</div>
-	<div class="line">Detecting Storage........................ FAILED</div>
-	<div class="line">Loading System Kernel.................... ERROR</div>
+		<button type="button" onclick="addItem()">Agregar Ítem</button>
 
-	<div class="error">
-		*** ERROR CODE: 103792 ***
-	</div>
+		<div style="margin-top:10px;text-align:right;">
+			<b>Total: Q <span id="total">0.00</span></b>
+		</div>
 
-	<div class="line">
-		SYSTEM HALTED.<br>
-		ADMINISTRATOR ACCESS REQUIRED.<br>
-		CONTACT ADMINISTRATOR TO FIX SYSTEM.
-	</div>
+		<button type="submit" style="margin-top:10px;">Generar Ticket</button>
+	</form>
+</div>
 
-	<div class="input-box">
-		<div class="line">ENTER ADMIN PASSWORD:</div>
-		<input type="password" id="pwd" autofocus>
-		<button onclick="check()">UNLOCK SYSTEM</button>
-	</div>
+<div id="ticket" class="ticket" style="display:none;"></div>
 
-	<div id="msg"></div>
+<div class="no-print" style="text-align:center;margin-top:20px;">
+	<button onclick="printTicket()">Imprimir Ticket</button>
+	<button onclick="requestReset()" style="margin-left:8px;">Reiniciar Conteo</button>
 </div>
 
 <script>
-	const PASSWORD = "45985365"; // contraseña admin
+	if (!localStorage.getItem('ticketNumber')) {
+		localStorage.setItem('ticketNumber', '1');
+	}
 
-	function check() {
-		const val = document.getElementById("pwd").value;
-		const msg = document.getElementById("msg");
+	const RESET_PASSWORD = '45985365';
 
-		if (val === PASSWORD) {
-			msg.innerHTML = "<div class='success'>ACCESS GRANTED<br>SYSTEM UNLOCKED</div>";
-		} else {
-			msg.innerHTML = "<div class='denied'>ACCESS DENIED<br>INVALID PASSWORD</div>";
+	function getNextTicketNumber() {
+		let num = parseInt(localStorage.getItem('ticketNumber'), 10);
+		localStorage.setItem('ticketNumber', (num + 1).toString());
+		return num;
+	}
+
+	function addItem() {
+		const row = document.createElement('tr');
+		row.innerHTML = `
+			<td><input type="text" class="desc" required></td>
+			<td><input type="number" class="cant" value="1" min="1" style="width:60px;"></td>
+			<td><input type="number" class="precio" value="0" min="0" step="0.01" style="width:80px;"></td>
+			<td class="subtotal">0.00</td>
+			<td><button type="button" onclick="this.closest('tr').remove();calcTotal();">Quitar</button></td>
+		`;
+		document.getElementById('itemsBody').appendChild(row);
+		row.querySelectorAll('input').forEach(i => i.addEventListener('input', calcTotal));
+		calcTotal();
+	}
+
+	function calcTotal() {
+		let total = 0;
+		document.querySelectorAll('#itemsBody tr').forEach(row => {
+			const cant = parseFloat(row.querySelector('.cant').value) || 0;
+			const precio = Math.max(0, parseFloat(row.querySelector('.precio').value) || 0);
+			const sub = cant * precio;
+			row.querySelector('.subtotal').textContent = sub.toFixed(2);
+			total += sub;
+		});
+		document.getElementById('total').textContent = total.toFixed(2);
+		return total;
+	}
+
+	function printTicket() {
+		if (document.getElementById('ticket').style.display === 'none') {
+			alert('Primero genera un ticket');
+			return;
+		}
+		window.print();
+	}
+
+	document.getElementById('ticketForm').onsubmit = function(e) {
+		e.preventDefault();
+
+		const items = [];
+		document.querySelectorAll('#itemsBody tr').forEach(row => {
+			const d = row.querySelector('.desc').value;
+			const c = parseFloat(row.querySelector('.cant').value) || 0;
+			const p = parseFloat(row.querySelector('.precio').value) || 0;
+			if (d && c > 0) items.push({d,c,p,s:c*p});
+		});
+
+		if (!items.length) {
+			alert('Agrega al menos un ítem');
+			return;
+		}
+
+		const total = calcTotal().toFixed(2);
+		const n = getNextTicketNumber();
+		const now = new Date();
+
+		let html = '';
+		items.forEach(i => {
+			html += `<tr>
+				<td>${i.d}</td>
+				<td style="text-align:right">${i.c}</td>
+				<td style="text-align:right">Q${i.p.toFixed(2)}</td>
+				<td style="text-align:right">Q${i.s.toFixed(2)}</td>
+			</tr>`;
+		});
+
+		document.getElementById('ticket').style.display = 'block';
+		document.getElementById('ticket').innerHTML = `
+			<div style="font-weight:bold;">¡Bienvenido!</div>
+			<div>TICKET #${n}</div>
+			<div>${now.toLocaleDateString('es-GT')} ${now.toLocaleTimeString('es-GT')}</div>
+			<hr>
+			<table style="width:100%;font-size:13px;">
+				${html}
+			</table>
+			<hr>
+			<b>Total: Q${total}</b>
+			<hr>
+			<div class="ticket-footer">Gracias por su compra</div>
+		`;
+
+		document.getElementById('itemsBody').innerHTML = '';
+		addItem();
+	};
+
+	function requestReset() {
+		const pwd = prompt('Contraseña para reiniciar:');
+		if (pwd === RESET_PASSWORD) {
+			if (confirm('¿Reiniciar conteo?')) {
+				localStorage.setItem('ticketNumber','1');
+				alert('Conteo reiniciado');
+			}
+		} else if (pwd !== null) {
+			alert('Contraseña incorrecta');
 		}
 	}
+
+	window.onload = addItem;
 </script>
 
 </body>
