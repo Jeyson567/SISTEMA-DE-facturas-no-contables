@@ -5,21 +5,33 @@
 <title>Sistema de Tickets</title>
 
 <style>
+	:root{
+		--bg:#f3f6f9;
+		--card:#ffffff;
+		--muted:#6b7280;
+		--accent:#2563eb;
+		--accent-2:#06b6d4;
+		--shadow: 0 6px 18px rgba(15,23,42,0.08);
+		--radius:10px;
+	}
+
 	body{
-		font-family: monospace;
-		background:#f5f5f5;
-		padding:20px;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+		background:linear-gradient(180deg, var(--bg), #eef2f7);
+		padding:24px;
 		display:flex;
 		flex-direction:column;
 		align-items:center;
+		color:#111827;
 	}
 
 	.ticket{
 		width:80mm;
-		background:#fff;
-		padding:5mm;
-		border:1px solid #ccc;
-		box-shadow:0 2px 8px #ccc;
+		background:var(--card);
+		padding:8mm;
+		border-radius:6px;
+		border:1px solid rgba(15,23,42,0.06);
+		box-shadow:var(--shadow);
 		box-sizing:border-box;
 	}
 
@@ -27,6 +39,7 @@
 	.ticket-footer{
 		text-align:center;
 		font-size:13px;
+		color:var(--muted);
 	}
 
 	table{
@@ -48,6 +61,17 @@
 	input{ width:100%; }
 
 	.no-print{ margin-bottom:20px; }
+
+	/* UI helpers */
+	h1.app-title{ margin:0 0 12px 0; font-size:20px; letter-spacing:0.2px; }
+	.panel{ background:var(--card); padding:16px; border-radius:var(--radius); box-shadow:var(--shadow); width:760px; max-width:96%; }
+	.controls{ display:flex; gap:8px; align-items:center; margin-top:10px; }
+	button{ background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+	button.secondary{ background:#e5e7eb; color:#111827; }
+	button.ghost{ background:transparent; color:var(--accent); border:1px solid rgba(37,99,235,0.12); }
+	button.small{ padding:6px 8px; font-size:13px; }
+	.muted{ color:var(--muted); font-size:13px; }
+	.admin-status{ margin-left:auto; font-size:13px; }
 
 	/* IMPRESIÓN 80MM SIN CORTES */
 	@page{
@@ -79,14 +103,20 @@
 
 <body>
 
-<div class="no-print">
-	<h2>Generar Ticket</h2>
+<div class="panel no-print">
+	<div style="display:flex;align-items:center;gap:12px;">
+		<div>
+			<h1 class="app-title">Sistema de Tickets</h1>
+			<div class="muted">Genera y imprime tickets rápidos</div>
+		</div>
+		<div class="admin-status" id="adminStatus">Admin: <span class="muted">(sin contraseña)</span></div>
+	</div>
 
 	<form id="ticketForm">
-	<table>
+	<table style="margin-top:12px;">
 		<thead>
 			<tr>
-				<th>Descripción</th>
+				<th style="text-align:left;">Descripción</th>
 				<th>Cant</th>
 				<th>P.Unit</th>
 				<th>Subt</th>
@@ -96,24 +126,24 @@
 		<tbody id="itemsBody"></tbody>
 	</table>
 
-	<button type="button" onclick="addItem()">Agregar ítem</button>
-
-	<div style="text-align:right;margin-top:10px;">
-		<b>Total: Q <span id="total">0.00</span></b>
+	<div class="controls">
+		<button type="button" id="addItemBtn">Agregar ítem</button>
+		<div style="margin-left:auto;text-align:right;">
+			<div class="muted">Total</div>
+			<div style="font-size:18px;font-weight:600;">Q <span id="total">0.00</span></div>
+		</div>
 	</div>
 
-	<button type="submit">Generar Ticket</button>
+	<div style="display:flex;gap:8px;margin-top:12px;">
+		<button type="submit">Generar Ticket</button>
+		<button type="button" id="printBtn" class="secondary">Imprimir</button>
+		<button type="button" id="resetBtn" class="ghost">Restablecer conteo</button>
+		<button type="button" id="setPassBtn" class="small secondary" style="margin-left:auto;">Establecer contraseña admin</button>
+	</div>
 	</form>
 </div>
 
-<div id="ticket" class="ticket" style="display:none;"></div>
-
-<div class="no-print" style="text-align:center;margin-top:10px;">
-	<button onclick="window.print()">Imprimir</button>
-	<button onclick="resetTickets()" style="margin-left:8px;">
-		Restablecer conteo
-	</button>
-</div>
+<div id="ticket" class="ticket" style="display:none;margin-top:16px;"></div>
 
 <script>
 	/* CONTADOR DE TICKETS */
@@ -122,23 +152,63 @@
 	}
 
 	function nextTicket(){
-		let n=parseInt(localStorage.getItem('ticketNumber'));
-		localStorage.setItem('ticketNumber',n+1);
+		let n=parseInt(localStorage.getItem('ticketNumber'), 10);
+		localStorage.setItem('ticketNumber', String(n + 1));
 		return n;
 	}
 
 	/* ÍTEMS */
+	function escapeHtml(str){
+		return String(str)
+			.replace(/&/g,'&amp;')
+			.replace(/</g,'&lt;')
+			.replace(/>/g,'&gt;')
+			.replace(/\"/g,'&quot;')
+			.replace(/'/g,'&#39;');
+	}
+
 	function addItem(){
 		const tr=document.createElement('tr');
-		tr.innerHTML=`
-			<td><input class="desc" required></td>
-			<td><input type="number" class="cant" value="1" min="1" style="width:50px"></td>
-			<td><input type="number" class="precio" value="0" min="0" step="0.01" style="width:70px"></td>
-			<td class="sub">0.00</td>
-			<td><button type="button" onclick="this.closest('tr').remove();calc()">X</button></td>
-		`;
+
+		const tdDesc = document.createElement('td');
+		const inpDesc = document.createElement('input');
+		inpDesc.className = 'desc';
+		inpDesc.setAttribute('required','');
+		inpDesc.setAttribute('aria-label','Descripción del ítem');
+		tdDesc.appendChild(inpDesc);
+
+		const tdCant = document.createElement('td');
+		const inpCant = document.createElement('input');
+		inpCant.type='number'; inpCant.className='cant'; inpCant.value='1'; inpCant.min='1'; inpCant.style.width='50px';
+		inpCant.setAttribute('aria-label','Cantidad');
+		tdCant.appendChild(inpCant);
+
+		const tdPrecio = document.createElement('td');
+		const inpPrecio = document.createElement('input');
+		inpPrecio.type='number'; inpPrecio.className='precio'; inpPrecio.value='0'; inpPrecio.min='0'; inpPrecio.step='0.01'; inpPrecio.style.width='70px';
+		inpPrecio.setAttribute('aria-label','Precio unitario');
+		tdPrecio.appendChild(inpPrecio);
+
+		const tdSub = document.createElement('td');
+		tdSub.className='sub';
+		tdSub.textContent='0.00';
+
+		const tdBtn = document.createElement('td');
+		const btn = document.createElement('button');
+		btn.type='button'; btn.className='remove-btn'; btn.textContent='X';
+		tdBtn.appendChild(btn);
+
+		tr.appendChild(tdDesc);
+		tr.appendChild(tdCant);
+		tr.appendChild(tdPrecio);
+		tr.appendChild(tdSub);
+		tr.appendChild(tdBtn);
+
 		document.getElementById('itemsBody').appendChild(tr);
-		tr.querySelectorAll('input').forEach(i=>i.oninput=calc);
+
+		[inpDesc, inpCant, inpPrecio].forEach(i=>i.addEventListener('input', calc));
+		btn.addEventListener('click', ()=>{ tr.remove(); calc(); });
+
 		calc();
 	}
 
@@ -156,8 +226,15 @@
 	}
 
 	/* GENERAR TICKET */
-	document.getElementById('ticketForm').onsubmit=e=>{
+	document.getElementById('ticketForm').addEventListener('submit', e => {
 		e.preventDefault();
+
+		const now=new Date();
+		const totalValue = calc();
+		if(totalValue <= 0){
+			alert('Agrega al menos un ítem con precio mayor a 0 antes de generar el ticket.');
+			return;
+		}
 
 		let rows='';
 		document.querySelectorAll('#itemsBody tr').forEach(tr=>{
@@ -165,17 +242,15 @@
 			const c=tr.querySelector('.cant').value;
 			const p=tr.querySelector('.precio').value;
 			const s=tr.querySelector('.sub').textContent;
-			if(d) rows+=`
-				<tr>
-					<td>${d}</td>
-					<td>${c}</td>
-					<td>Q${Number(p).toFixed(2)}</td>
-					<td>Q${s}</td>
-				</tr>`;
+			if(d) rows+=`\n                <tr>\n                    <td>${escapeHtml(d)}</td>\n                    <td>${escapeHtml(c)}</td>\n                    <td>Q${Number(p).toFixed(2)}</td>\n                    <td>Q${escapeHtml(s)}</td>\n                </tr>`;
 		});
 
-		const now=new Date();
-		const total=calc().toFixed(2);
+		if(!rows.trim()){
+			alert('No hay ítems para generar el ticket.');
+			return;
+		}
+
+		const total = totalValue.toFixed(2);
 
 		document.getElementById('ticket').innerHTML=`
 			<div class="ticket-header">
@@ -222,26 +297,60 @@
 		document.getElementById('ticket').style.display='block';
 		document.getElementById('itemsBody').innerHTML='';
 		addItem();
-	};
+	});
 
 	/* RESTABLECER CONTEO */
-	function resetTickets(){
-		const pwd = prompt("Ingrese contraseña de administrador:");
-		if(pwd === null) return;
+	async function hashString(str){
+		const enc = new TextEncoder();
+		const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+		return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+	}
 
-		const PASSWORD = "45985365"; // cambia si deseas
+	async function setAdminPassword(){
+		const p1 = prompt('Ingrese nueva contraseña de administrador:');
+		if(p1 === null) return;
+		const p2 = prompt('Confirme la nueva contraseña:');
+		if(p2 !== p1){ alert('Las contraseñas no coinciden.'); return; }
+		const h = await hashString(p1);
+		localStorage.setItem('adminPassHash', h);
+		document.getElementById('adminStatus').innerHTML = 'Admin: <span class="muted">(establecida)</span>';
+		alert('Contraseña establecida correctamente.');
+	}
 
-		if(pwd === PASSWORD){
-			if(confirm("¿Restablecer el conteo de tickets a 1?")){
-				localStorage.setItem("ticketNumber","1");
-				alert("Conteo restablecido correctamente");
+	async function resetTickets(){
+		const stored = localStorage.getItem('adminPassHash');
+		if(!stored){
+			if(!confirm('No hay contraseña admin establecida. ¿Deseas restablecer el conteo sin contraseña?')) return;
+			if(confirm('¿Restablecer el conteo de tickets a 1?')){
+				localStorage.setItem('ticketNumber','1');
+				alert('Conteo restablecido correctamente');
 			}
-		}else{
-			alert("Contraseña incorrecta");
+			return;
+		}
+
+		const pwd = prompt('Ingrese contraseña de administrador:');
+		if(pwd === null) return;
+		const h = await hashString(pwd);
+		if(h === stored){
+			if(confirm('¿Restablecer el conteo de tickets a 1?')){
+				localStorage.setItem('ticketNumber','1');
+				alert('Conteo restablecido correctamente');
+			}
+		} else {
+			alert('Contraseña incorrecta');
 		}
 	}
 
-	window.onload=addItem;
+	document.addEventListener('DOMContentLoaded', async ()=>{
+		addItem();
+		document.getElementById('addItemBtn').addEventListener('click', addItem);
+		document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+		document.getElementById('resetBtn').addEventListener('click', resetTickets);
+		document.getElementById('setPassBtn').addEventListener('click', setAdminPassword);
+
+		const stored = localStorage.getItem('adminPassHash');
+		if(stored) document.getElementById('adminStatus').innerHTML = 'Admin: <span class="muted">(establecida)</span>';
+	});
 </script>
 
 </body>
